@@ -30,7 +30,7 @@ namespace RimValiCore
 
     public class EditorWindow : Window
     {
-        private const float RectColorFieldHeight = 40f;
+        private const float RectInnerFieldHeight = 40f;
 
         private readonly List<Pawn> pawns = Find.GameInitData.startingAndOptionalPawns;
 
@@ -48,12 +48,19 @@ namespace RimValiCore
 
         private Dictionary<string, ColorSet> colorSets = new Dictionary<string, ColorSet>();
         private Rect[] RectColorFields;
+        private Rect[] RectMaskFields;
+        private Rect RectMaskSelectInner;
         private Rect RectColorSelectInner;
         private Rect RectPawnSelectInner;
         private Vector2 PawnSelectorScroll;
         private Vector2 ColorSelectorScroll;
+        private Vector2 MaskSelectorScroll;
+        private InfoBoxStatus infoBoxStatus = InfoBoxStatus.Expanded;
+        private float infoBoxExpansion = 1f;
+        private bool calculatedInnerMask = false;
 
         private Pawn selectedPawn;
+        private List<RenderableDef> renderableDefs;
 
         public override Vector2 InitialSize => RectWindowMain.size;
 
@@ -84,39 +91,50 @@ namespace RimValiCore
             RectColorSelectOuter = RectColoringPart.RightPartPixels(300f).ContractVertically(5);
             RectColorSelectOuter.width -= 5;
 
-            CalcInnerRect();
+            CalcInnerColorRect();
 
             RectPawnBig = RectColoringPart.LeftPartPixels(RectEditSections[0].height);
-            RectInfoBox = RectPawnBig.MoveRect(new Vector2(RectPawnBig.width + 5f, 0f)).ContractedBy(5f);
-            RectInfoBox.width = RectColoringPart.width - RectPawnBig.width - RectColorSelectOuter.width - 20f;
+            RectInfoBox = RectPawnBig.MoveRect(new Vector2(RectPawnBig.width, 0f)).ContractedBy(5f);
+            RectInfoBox.width = RectColoringPart.width - RectPawnBig.width - RectColorSelectOuter.width - 15f;
 
             //Saftey check!
             if(RimValiCoreMod.Settings.savedColors==null)
                 RimValiCoreMod.Settings.savedColors = new List<Color>() {Color.black, Color.black, Color.black, Color.black, Color.black, Color.black, Color.black, Color.black, Color.black, Color.black};
         }
 
+        public override void DoWindowContents(Rect _)
+        {
+            DrawPawnSelectionArea();
+            DrawPawn();
+            DrawInfoBoxExpansionButton();
+            DoInfoBoxExpansion();
+
+            DrawColorSelection();
+            DrawNameEdit();
+            DrawMaskBox();
+            DrawInfoBox();
+        }
+
         /// <summary>
         /// Recalculates the height and width of the inner scroll view for the color picking part
         /// </summary>
-        private void CalcInnerRect()
+        private void CalcInnerColorRect()
         {
             List<Rect> rectList = new List<Rect>();
 
             RectColorSelectInner = new Rect(RectColorSelectOuter)
             {
-                height = (colorSets.Count) * RectColorFieldHeight - 5f
+                height = colorSets.Count * RectInnerFieldHeight
             };
 
-            if (HasOpenColorField) RectColorSelectInner.height += RectColorFieldHeight * 3f;
+            if (HasOpenColorField) RectColorSelectInner.height += RectInnerFieldHeight * 3f;
 
             if (RectColorSelectInner.height > RectColorSelectOuter.height) RectColorSelectInner.width -= 17f;
 
-            RectColorSelectInner.height += 5f;
-
             for (int i = 0; i < colorSets.Count; i++)
             {
-                Vector2 mod = new Vector2(0f, RectColorFieldHeight * i + ((HasOpenColorField && (i > OpenColorField)) ? RectColorFieldHeight * 3f : 0f));
-                Rect tempRect = RectColorSelectInner.TopPartPixels(RectColorFieldHeight).MoveRect(mod);
+                Vector2 mod = new Vector2(0f, RectInnerFieldHeight * i + ((HasOpenColorField && (i > OpenColorField)) ? RectInnerFieldHeight * 3f : 0f));
+                Rect tempRect = RectColorSelectInner.TopPartPixels(RectInnerFieldHeight).MoveRect(mod);
                 tempRect.height -= 5f;
 
                 rectList.Add(tempRect);
@@ -125,9 +143,33 @@ namespace RimValiCore
             RectColorFields = rectList.ToArray();
         }
 
+        private void CalcInnerMaskRect(Rect inRect)
+        {
+            List<Rect> rectList = new List<Rect>();
+
+            RectMaskSelectInner = new Rect(RectInfoBox)
+            {
+                width = (RectInfoBox.width - 17f) * (1f - infoBoxExpansion),
+                height = ((RimValiRaceDef)SelectedPawn.def).renderableDefs.Count * RectInnerFieldHeight - 5f
+            };
+
+            for (int i = 0; i < ((RimValiRaceDef)SelectedPawn.def).renderableDefs.Count; i++)
+            {
+                Vector2 mod = new Vector2(0f, RectInnerFieldHeight * i /**+ ((HasOpenColorField && (i > OpenColorField)) ? RectInnerFieldHeight * 3f : 0f)**/);
+                Rect tempRect = inRect.TopPartPixels(RectInnerFieldHeight).MoveRect(mod);
+                tempRect.height -= 5f;
+
+                rectList.Add(tempRect);
+            }
+
+            RectMaskFields = rectList.ToArray();
+        }
+
         private bool HasOpenColorField => OpenColorField > -1;
 
-        private int OpenColorField { get; set; }
+        private int OpenColorField { get; set; } = -1;
+
+        private int OpenMaskField { get; set; } = -1;
 
         private Pawn SelectedPawn
         {
@@ -136,9 +178,10 @@ namespace RimValiCore
             {
                 selectedPawn = value;
 
-                if (SelectedPawn.def is RimValiRaceDef && SelectedPawn.GetComp<ColorComp>() is ColorComp comp)
+                if (SelectedPawn.def is RimValiRaceDef def && SelectedPawn.GetComp<ColorComp>() is ColorComp comp)
                 {
                     colorSets = comp.colors;
+                    renderableDefs = def.renderableDefs;
                 }
                 else
                 {
@@ -146,17 +189,141 @@ namespace RimValiCore
                 }
 
                 OpenColorField = -1;
-                CalcInnerRect();
+                CalcInnerColorRect();
+            }
+        }
+        protected Color BGColor
+        {
+            get
+            {
+                float num = Pulser.PulseBrightness(0.5f, Pulser.PulseBrightness(0.5f, 0.6f));
+                return new Color(num, num, num, 0.2f) * Color.yellow;
             }
         }
 
-        public override void DoWindowContents(Rect _)
+        /// <summary>
+        /// Does the info box expansion
+        /// </summary>
+        private void DoInfoBoxExpansion()
         {
-            DrawPawnSelectionArea();
-            DrawPawn();
-            DrawColorSelection();
-            DrawNameEdit();
-            DrawInfoBox();
+            switch (infoBoxStatus)
+            {
+                case InfoBoxStatus.Expanded:
+                    infoBoxExpansion = 1f;
+                    break;
+                case InfoBoxStatus.Expanding:
+                    infoBoxExpansion += 0.01f;
+                    break;
+                case InfoBoxStatus.Collapsing:
+                    infoBoxExpansion -= 0.01f;
+                    break;
+                case InfoBoxStatus.Collapsed:
+                    infoBoxExpansion = 0f;
+                    break;
+            }
+
+            if (infoBoxExpansion <= 0f)
+            {
+                infoBoxExpansion = 0f;
+                infoBoxStatus = InfoBoxStatus.Collapsed;
+                return;
+            }
+
+            if (infoBoxExpansion > 1f)
+            {
+                infoBoxExpansion = 1f;
+                infoBoxStatus = InfoBoxStatus.Expanded;
+            }
+        }
+
+        /// <summary>
+        /// Draws the button that controls the info box expansion
+        /// </summary>
+        private void DrawInfoBoxExpansionButton()
+        {
+            if (!(SelectedPawn.def is RimValiRaceDef def && !def.renderableDefs.NullOrEmpty())) return;
+
+            Widgets.DrawHighlightIfMouseover(RectPawnBig);
+
+            TooltipHandler.TipRegion(RectPawnBig, "RVC_TipExpandMask".Translate());
+            Widgets.DrawTextureFitted(RectPawnBig.TopPartPixels(RectInnerFieldHeight - 11f).RightPartPixels(RectInnerFieldHeight - 11f), (infoBoxStatus == InfoBoxStatus.Expanded || infoBoxStatus == InfoBoxStatus.Expanding) ? TexButton.Collapse : TexButton.Reveal, 1f);
+
+            if (Widgets.ButtonInvisible(RectPawnBig))
+            {
+                switch (infoBoxStatus)
+                {
+                    case InfoBoxStatus.Expanded:
+                    case InfoBoxStatus.Expanding:
+                        infoBoxStatus = InfoBoxStatus.Collapsing;
+                        SoundDefOf.TabOpen.PlayOneShotOnCamera();
+                        break;
+                    case InfoBoxStatus.Collapsing:
+                    case InfoBoxStatus.Collapsed:
+                        infoBoxStatus = InfoBoxStatus.Expanding;
+                        SoundDefOf.TabClose.PlayOneShotOnCamera();
+                        break;
+                }
+            }
+        }
+
+        private void DrawMaskBox()
+        {
+            if (infoBoxStatus == InfoBoxStatus.Expanded) return;
+
+            Rect RectDynMaskBox = new Rect(RectInfoBox)
+            {
+                width = (RectInfoBox.width - 17f) * (1f - infoBoxExpansion)
+            };
+
+            if (infoBoxStatus != InfoBoxStatus.Collapsed)
+            {
+                CalcInnerMaskRect(RectDynMaskBox);
+                calculatedInnerMask = false;
+            }
+
+            if (infoBoxStatus == InfoBoxStatus.Collapsed && !calculatedInnerMask)
+            {
+                CalcInnerMaskRect(RectDynMaskBox);
+                calculatedInnerMask = true;
+            }
+
+            Widgets.BeginScrollView(RectInfoBox, ref MaskSelectorScroll, RectMaskSelectInner);
+
+            Text.Anchor = TextAnchor.MiddleLeft;
+
+            for (int i = 0; i < RectMaskFields.Length; i++)
+            {
+                Rect rectTemp = RectMaskFields[i];
+                Rect rectExpandCollapseIcon = rectTemp.LeftPartPixels(rectTemp.height);
+
+                Widgets.DrawBox(rectTemp, 2);
+                Widgets.DrawHighlight(rectTemp);
+                Widgets.DrawHighlightIfMouseover(rectTemp);
+                Widgets.Label(rectTemp.RightPartPixels(rectTemp.width - rectTemp.height - 5f), renderableDefs[i].defName);
+                Widgets.DrawTextureFitted(rectExpandCollapseIcon.ContractedBy(11f), i == OpenMaskField ? TexButton.Collapse : TexButton.Reveal, 1f);
+
+                if (Widgets.ButtonInvisible(rectTemp))
+                {
+                    if (i == OpenMaskField)
+                    {
+                        OpenMaskField = -1;
+                        SoundDefOf.TabClose.PlayOneShotOnCamera();
+                    }
+                    else
+                    {
+                        if (OpenMaskField != -1) SoundDefOf.TabClose.PlayOneShotOnCamera();
+
+                        OpenMaskField = i;
+                        SoundDefOf.TabOpen.PlayOneShotOnCamera();
+                    }
+
+                    CalcInnerMaskRect(RectDynMaskBox);
+                }
+            }
+
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            Widgets.EndScrollView();
         }
 
         /// <summary>
@@ -164,9 +331,19 @@ namespace RimValiCore
         /// </summary>
         private void DrawInfoBox()
         {
-            Widgets.DrawHighlight(RectInfoBox);
-            Widgets.DrawBox(RectInfoBox, 2);
-            Widgets.Label(RectInfoBox.ContractedBy(2f + 5f), $"{"RVC_Tutorial".Translate($"<color=green>{SelectedPawn.def.label}</color>")}" +
+            if (infoBoxStatus == InfoBoxStatus.Collapsed) return;
+            
+            Rect RectDynInfoBox = new Rect(RectInfoBox)
+            {
+                width = RectInfoBox.width * infoBoxExpansion
+            };
+
+            RectDynInfoBox.x = RectInfoBox.xMax - RectDynInfoBox.width;
+
+            Widgets.DrawHighlight(RectDynInfoBox);
+            Widgets.DrawBox(RectDynInfoBox, 2);
+            Widgets.Label(RectDynInfoBox.ContractedBy(2f + 5f), 
+                $"{"RVC_Tutorial".Translate($"<color=green>{SelectedPawn.def.label}</color>")}" +
                 $"\n\n<color=orange>{"RVC_WarningColorEdit".Translate()}</color>");
         }
 
@@ -181,17 +358,17 @@ namespace RimValiCore
             {
                 string name = $"{SelectedPawn.def.defName}_ColorSet_{kvp.Key}".Translate();
                 Rect rectTemp = RectColorFields[pos];
-                Rect rectName = rectTemp;
                 Rect rectExpandCollapseIcon = rectTemp.LeftPartPixels(rectTemp.height);
 
                 Text.Anchor = TextAnchor.MiddleLeft;
 
-                Widgets.DrawLightHighlight(rectName);
+                Widgets.DrawLightHighlight(rectTemp);
                 Widgets.DrawHighlightIfMouseover(rectTemp);
-                Widgets.DrawBox(rectName, 2);
-                Widgets.Label(rectName.RightPartPixels(rectName.width - rectTemp.height - 5f), name);
+                Widgets.DrawBox(rectTemp, 2);
+                Widgets.Label(rectTemp.RightPartPixels(rectTemp.width - rectTemp.height - 5f), name);
                 Widgets.DrawTextureFitted(rectExpandCollapseIcon.ContractedBy(11f), pos == OpenColorField ? TexButton.Collapse : TexButton.Reveal, 1f);
 
+                //Open or Close a Color Field
                 if (Widgets.ButtonInvisible(rectTemp))
                 {
                     if (pos == OpenColorField)
@@ -207,8 +384,10 @@ namespace RimValiCore
                         SoundDefOf.TabOpen.PlayOneShotOnCamera();
                     }
 
-                    CalcInnerRect();
+                    CalcInnerColorRect();
                 }
+
+                //Draw the three recoloring options and buttons that allow to change them
                 if (pos == OpenColorField)
                 {
                     for (int i = 0; i < 3; i++)
@@ -216,12 +395,11 @@ namespace RimValiCore
                         float indent = 15f;
 
                         string colorName = $"{SelectedPawn.def.defName}_{kvp.Key}_{(Count)i}".Translate();
-                        Rect rectColorField = rectTemp.MoveRect(new Vector2(indent, RectColorFieldHeight * (i + 1)));
+                        Rect rectColorField = rectTemp.MoveRect(new Vector2(indent, RectInnerFieldHeight * (i + 1)));
                         rectColorField.width -= indent + 1f;
 
                         Rect rectColorLabel = rectColorField.RightPartPixels(rectColorField.width - 5f);
                         Rect rectColorColor = rectColorField.RightPartPixels(rectColorLabel.width - 100f - 5f);
-
 
                         Widgets.DrawLightHighlight(rectColorField);
                         Widgets.DrawBoxSolidWithOutline(rectColorColor, kvp.Value.Colors[i], new Color(255f, 255f, 255f, 0.5f), 3);
@@ -381,6 +559,17 @@ namespace RimValiCore
             First,
             Second,
             Third
+        }
+
+        /// <summary>
+        /// Defines in what state the InfoBox is
+        /// </summary>
+        private enum InfoBoxStatus
+        {
+            Expanded,
+            Collapsing,
+            Collapsed,
+            Expanding
         }
     }
 }
