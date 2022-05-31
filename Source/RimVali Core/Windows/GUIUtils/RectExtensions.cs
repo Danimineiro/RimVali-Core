@@ -154,7 +154,7 @@ namespace RimValiCore.Windows.GUIUtils
             rectToolTip.width += Math.Max(Text.CalcSize(requirements.RequirementModeLabel).x, requirements.LongestStringLength);
             rectToolTip.y = Math.Min(rectToolTip.y, UI.screenHeight - rectToolTip.height);
 
-            Find.WindowStack.ImmediateWindow("help I'm Dying".GetHashCode(), rectToolTip, WindowLayer.Super, () =>
+            Find.WindowStack.ImmediateWindow(requirements.GetHashCode(), rectToolTip, WindowLayer.Super, () =>
             {
                 Rect rectLine = rectToolTip.AtZero().TopPartPixels(ToolTipRowHeight).MoveRect(new Vector2(10f, 10f));
                 rectLine.xMax -= 20f;
