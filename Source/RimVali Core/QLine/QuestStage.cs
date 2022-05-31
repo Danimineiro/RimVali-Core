@@ -86,7 +86,7 @@ namespace RimValiCore.QLine
             private set => longestStringLength = value;
         }
 
-        public string RequirementModeLabel => labelOverride ?? $"<color=green>{$"##RVC_{mode}"}:</color>";
+        public string RequirementModeLabel => labelOverride ?? $"QLine_{mode}".Translate(CountForXMustBeTrue);
 
         public bool AreFulFilled
         {

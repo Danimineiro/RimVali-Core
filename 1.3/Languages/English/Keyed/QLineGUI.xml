@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+	<QLine_AllTrue>All must be true:</QLine_AllTrue>
+	<QLine_AllFalse>All must be false:</QLine_AllFalse>
+	<QLine_AtLeastXMustBeTrue>At least {0} must be true:</QLine_AtLeastXMustBeTrue>
+	
+	
+</LanguageData>

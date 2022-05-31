@@ -31,11 +31,11 @@ namespace RimValiCore.QLine
 
                             new List<Requirements>
                             {
-                                new Requirements(RequirementMode.AllFalse, labelOverride: "Label Override Test", disableReasons: new List<DisableReason>
+                                new Requirements(RequirementMode.AtLeastXMustBeTrue, countForXMustBeTrue: 2, disableReasons: new List<DisableReason>
                                 {
-                                    new DisableReason(() => false, () => "Ayayayayay"),
-                                    new DisableReason(() => false, () => "Wololol"),
-                                    new DisableReason(() => false, () => "Pew pew pew"),
+                                    new DisableReason(() => true, () => "Ayayayayay"),
+                                    new DisableReason(() => true, () => "Wololol"),
+                                    new DisableReason(() => true, () => "Pew pew pew"),
                                     new DisableReason(() => false, () => "My name is a name"),
                                     new DisableReason(() => false, () => "both? both. both."),
                                 })
@@ -43,11 +43,11 @@ namespace RimValiCore.QLine
 
                             new List<DisableReason>
                             {
-                                new DisableReason(() => true, () => "Does NOT have a lot of garbage lying around"),
+                                new DisableReason(() => false, () => "Does NOT have a lot of garbage lying around"),
                                 new DisableReason(() => false, () => "Does NOT have gotten bloodrot from Nesi"),
                                 new DisableReason(() => false, () => "Does have a good friend"),
-                                new DisableReason(() => true, () => "Does NOT pretend to be gay for financial benefits"),
-                                new DisableReason(() => true, () => "Does NOT say <color=red>UwU</color> occasionally when pretending to be gay"),
+                                new DisableReason(() => false, () => "Does NOT pretend to be gay for financial benefits"),
+                                new DisableReason(() => false, () => "Does NOT say <color=red>UwU</color> occasionally when pretending to be gay"),
                             }
                         )
                     ),
