@@ -103,11 +103,11 @@ namespace RimValiCore.QLine
                 switch (mode)
                 {
                     case RequirementMode.AllTrue:
-                        fulfilled = (innerRequirements?.All(requirement => requirement.AreFulFilled) ?? true) && (disableReasons?.Any(reason => !reason.ShouldDisable) ?? true);
+                        fulfilled = (innerRequirements?.All(requirement => requirement.AreFulFilled) ?? true) && (disableReasons?.All(reason => !reason.ShouldDisable) ?? true);
                         break;
 
                     case RequirementMode.AllFalse:
-                        fulfilled = (innerRequirements?.All(requirement => !requirement.AreFulFilled) ?? true) && (disableReasons?.Any(reason => reason.ShouldDisable) ?? true);
+                        fulfilled = (innerRequirements?.All(requirement => !requirement.AreFulFilled) ?? true) && (disableReasons?.All(reason => reason.ShouldDisable) ?? true);
                         break;
 
                     case RequirementMode.AtLeastXMustBeTrue:
