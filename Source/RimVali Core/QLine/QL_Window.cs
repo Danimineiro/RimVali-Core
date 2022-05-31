@@ -323,9 +323,9 @@ namespace RimValiCore.QLine
                 Rect rectButton = rectDecisionButtonBase.MoveRect(new Vector2(0f, (rectDecisionButtonBase.height + CommonMargin) * i));
                 Rect rectIcon = rectButton.LeftPartPixels(rectButton.height).ContractedBy(4f);
                 QuestStageButtonDecision button = stage[i];
-                bool buttonDisabled = button.Disabled;
+                bool buttonAvailable = button.IsAvailable;
 
-                if (buttonDisabled)
+                if (!buttonAvailable)
                 {
                     GUI.color = new Color(0.6f, 0.6f, 0.6f);
                 }
@@ -334,12 +334,12 @@ namespace RimValiCore.QLine
                 {
                     button.ButtonAction();
                     Close();
-                }, buttonDisabled);
+                }, !buttonAvailable);
 
                 GUI.color = Color.white;
-                rectButton.MakeToolTip(windowRect.position, button.DisableReasons);
+                rectButton.MakeToolTip(windowRect.position, button.Requirements);
 
-                GUI.DrawTexture(rectIcon, buttonDisabled ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex);
+                GUI.DrawTexture(rectIcon, buttonAvailable ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
             }
 
             DrawDebugButton();

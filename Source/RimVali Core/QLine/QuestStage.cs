@@ -30,9 +30,9 @@ namespace RimValiCore.QLine
 
     public class QuestStageButtonDecision
     {
-        private string buttonText;
-        private Action buttonAction;
-        private List<DisableReason> disableReasons;
+        private readonly string buttonText;
+        private readonly Action buttonAction;
+        private readonly Requirements requirements;
 
         public QuestStageButtonDecision(string buttonText, Action buttonAction)
         {
@@ -40,22 +40,167 @@ namespace RimValiCore.QLine
             this.buttonAction = buttonAction;
         }
 
-        public QuestStageButtonDecision(string buttonText, Action buttonAction, List<DisableReason> disableReasons) : this(buttonText, buttonAction)
+        public QuestStageButtonDecision(string buttonText, Action buttonAction, Requirements requirements) : this(buttonText, buttonAction)
         {
-            this.disableReasons = disableReasons;
+            this.requirements = requirements;
         }
 
-        public string ButtonText { get => buttonText; set => buttonText = value; }
+        public string ButtonText => buttonText;
 
-        public bool Disabled => !disableReasons.NullOrEmpty() && DisableReasons.Any(reason => reason.ShouldDisable);
+        public bool IsAvailable => Requirements?.AreFulFilled ?? true;
 
-        public string DisableReason => DisableReasons.Join(reason => $"{reason.Reason}: {reason.ShouldDisable}", "\n");
+        //public string DisableReason => Requirements.Join(reason => $"{reason.Reason}: {reason.ShouldDisable}", "\n");
 
-        public Action ButtonAction { get => buttonAction; set => buttonAction = value; }
-        
-        public List<DisableReason> DisableReasons { get => disableReasons; set => disableReasons = value; }
+        public Action ButtonAction => buttonAction;
+
+        public Requirements Requirements => requirements;
 
         public override string ToString() => $"[QuestStageButtonDecision] buttonText: {buttonText}, hasAction: {buttonAction != null}";
+    }
+
+    public class Requirements
+    {
+        private readonly RequirementMode mode;
+        private readonly List<Requirements> innerRequirements;
+        private readonly List<DisableReason> disableReasons;
+        private readonly bool valid;
+        private readonly int numberRequiredForXMustBeTrueMode;
+        private float? longestStringLength;
+        private int? numberOfRequirements;
+        private int? count;
+
+        public int NumberRequiredForXMustBeTrueMode => numberRequiredForXMustBeTrueMode;
+
+        public List<Requirements> InnerRequirements => innerRequirements ?? new List<Requirements>();
+
+        public List<DisableReason> DisableReasons => disableReasons ?? new List<DisableReason>();
+
+        public bool Valid => valid;
+
+        public int ToolTipSpacesNeeded => (int)(count ?? (count = AllReasons().Count() + numberOfRequirements)); //+ 1 for itself
+
+        public float LongestStringLength
+        {
+            get => (float)(longestStringLength ?? (longestStringLength = DetermineLongestStringLength()));
+            private set => longestStringLength = value;
+        }
+
+        public string RequirementModeLabel => $"<color=green>{$"##RVC_{mode}"}:</color>";
+
+        public bool AreFulFilled
+        {
+            get
+            {
+                if (!valid)
+                {
+                    Log.Error("Can't validate invalid Requirements object!");
+                    return false;
+                }
+
+                bool fulfilled = true;
+
+                switch (mode)
+                {
+                    case RequirementMode.AllTrue:
+                        fulfilled = (innerRequirements?.All(requirement => requirement.AreFulFilled) ?? true) && (disableReasons?.Any(reason => !reason.ShouldDisable) ?? true);
+                        break;
+
+                    case RequirementMode.AllFalse:
+                        fulfilled = (innerRequirements?.All(requirement => !requirement.AreFulFilled) ?? true) && (disableReasons?.Any(reason => reason.ShouldDisable) ?? true);
+                        break;
+
+                    case RequirementMode.AtLeastXMustBeTrue:
+                        fulfilled = NumberRequiredForXMustBeTrueMode <= (innerRequirements?.Sum(requirement => requirement.AreFulFilled ? 1 : 0) ?? 0) + (disableReasons?.Sum(reason => reason.ShouldDisable ? 0 : 1) ?? 0);
+                        break;
+                }
+
+                return fulfilled;
+            }
+        }
+
+        public Requirements(RequirementMode mode, List<Requirements> innerRequirements = null, List<DisableReason> disableReasons = null, int numberRequiredForXMustBeTrueMode = -1)
+        {
+            this.numberRequiredForXMustBeTrueMode = numberRequiredForXMustBeTrueMode;
+            this.innerRequirements = innerRequirements;
+            this.disableReasons = disableReasons;
+            this.mode = mode;
+            
+            valid = ErrorCheck();
+        }
+
+        public float DetermineLongestStringLength()
+        {
+            float length = 0;
+            float lengthMod = Windows.GUIUtils.RectExtensions.ToolTipRowHeight;
+
+            if (!disableReasons.NullOrEmpty())
+            {
+                length = disableReasons.Max(reason => Text.CalcSize(reason.Reason).x + lengthMod);
+            }
+
+            if (!innerRequirements.NullOrEmpty())
+            {
+                foreach (Requirements requirement in innerRequirements)
+                {
+                    length = Math.Max(length, requirement.DetermineLongestStringLength() + lengthMod);
+                }
+            }
+
+            return length;
+        }
+
+        public IEnumerable<DisableReason> AllReasons()
+        {
+            if (!disableReasons.NullOrEmpty())
+            {
+                foreach (DisableReason reason in disableReasons)
+                {
+                    yield return reason;
+                }
+            }
+
+            int tempCounter = 1;
+            if (!innerRequirements.NullOrEmpty())
+            {
+                foreach (Requirements requirement in innerRequirements)
+                {
+                    tempCounter++;
+                    foreach (DisableReason reason in requirement.AllReasons())
+                    {
+                        yield return reason;
+                    }
+                }
+            }
+
+            numberOfRequirements = tempCounter;
+            yield break;
+        }
+
+        private bool ErrorCheck()
+        {
+            bool valid = true;
+
+            if (innerRequirements.NullOrEmpty() && disableReasons.NullOrEmpty())
+            {
+                Log.Error("innerRequirements can't be NullOrEmpty if disableReason is NullOrEmpty!");
+                valid = false;
+            }
+
+            if (mode == RequirementMode.AtLeastXMustBeTrue && numberRequiredForXMustBeTrueMode <= 0)
+            {
+                Log.Error($"mode is {mode}, but numberRequiredForXMustBeTrueMode is 0 or less ({numberRequiredForXMustBeTrueMode})!");
+                valid = false;
+            }
+
+            return valid;
+        }
+    }
+
+    public enum RequirementMode
+    {
+        AllTrue = 0,
+        AllFalse = 1,
+        AtLeastXMustBeTrue = 2
     }
 
     public class DisableReason

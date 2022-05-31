@@ -11,6 +11,8 @@ namespace RimValiCore.Windows.GUIUtils
 {
     public static class RectExtensions
     {
+        public const float ToolTipRowHeight = 25f;
+
         /// <summary>
         ///     Creates a copy of this <see cref="Rect" /> moved by a <see cref="Vector2" />
         /// </summary>
@@ -133,42 +135,61 @@ namespace RimValiCore.Windows.GUIUtils
         public static Rect FlipHorizontal(this Rect rect) => new Rect(rect.x + rect.width, rect.y, rect.width * -1, rect.height);
 
         /// <summary>
-        ///     Creates a window that displays all <see cref="DisableReason"/>s that determine why a button may be enabled or disabled.
-        ///     Doesn't display anything if <paramref name="disableReasons"/> is <see cref="GenList.NullOrEmpty{T}(IList{T})"/>
+        ///     Creates a window that displays all <see cref="Requirements"/> to determine why a button may be enabled or disabled.
+        ///     Doesn't display anything if <paramref name="requirements"/> is <see cref="GenList.NullOrEmpty{T}(IList{T})"/>
         /// </summary>
         /// <param name="toolTipArea">The <see cref="Rect"/> in which the window is created, if the mouse is over it</param>
         /// <param name="outerWindowPos">A <see cref="Vector2"/> that modifies the position of the window</param>
-        /// <param name="disableReasons">The <see cref="DisableReason"/>s the window displays</param>
-        public static void MakeToolTip(this Rect toolTipArea, Vector2 outerWindowPos, List<DisableReason> disableReasons)
+        /// <param name="requirements">The <see cref="DisableReason"/>s the window displays</param>
+        public static void MakeToolTip(this Rect toolTipArea, Vector2 outerWindowPos, Requirements requirements)
         {
-            if (disableReasons.NullOrEmpty() || !Mouse.IsOver(toolTipArea)) return;
+            if (requirements is null || !Mouse.IsOver(toolTipArea)) return;
 
-            string requirementsString = "<color=green>##Requirements:</color>";
-            const float RowHeight = 25f;
+            List<DisableReason> disableReasons = requirements.AllReasons().ToList();
             const float CommonMargin = 5f;
 
-            Rect rectToolTip = new Rect(Event.current.mousePosition + outerWindowPos + new Vector2(CommonMargin, CommonMargin), new Vector2(RowHeight + 25f, 20f));
-            rectToolTip.height += (disableReasons.Count + 1) * (RowHeight + 2f) - 2f;
-            rectToolTip.width += Math.Max(Text.CalcSize(requirementsString).x, disableReasons.Max(reason => Text.CalcSize(reason.Reason).x));
+            Rect rectToolTip = new Rect(Event.current.mousePosition + outerWindowPos + new Vector2(CommonMargin, CommonMargin), new Vector2(ToolTipRowHeight + 25f, 20f));
+            rectToolTip.height += (requirements.ToolTipSpacesNeeded) * (ToolTipRowHeight + 2f) - 2f;
+            rectToolTip.width += Math.Max(Text.CalcSize(requirements.RequirementModeLabel).x, requirements.LongestStringLength);
             rectToolTip.y = Math.Min(rectToolTip.y, UI.screenHeight - rectToolTip.height);
 
             Find.WindowStack.ImmediateWindow("help I'm Dying".GetHashCode(), rectToolTip, WindowLayer.Super, () =>
             {
-                Rect rectLine = rectToolTip.AtZero().TopPartPixels(RowHeight).MoveRect(new Vector2(10f, 10f));
+                Rect rectLine = rectToolTip.AtZero().TopPartPixels(ToolTipRowHeight).MoveRect(new Vector2(10f, 10f));
                 rectLine.xMax -= 20f;
 
-                Text.Anchor = TextAnchor.MiddleLeft;
-                Widgets.Label(rectLine, requirementsString);
-
-                for (int j = 0; j < disableReasons.Count; j++)
-                {
-                    rectLine = rectLine.MoveRect(new Vector2(0f, rectLine.height + 2f));
-                    GUI.DrawTexture(rectLine.LeftPartPixels(rectLine.height).ContractedBy(4f), disableReasons[j].ShouldDisable ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex);
-                    Widgets.Label(rectLine.RightPartPixels(rectLine.width - rectLine.height), disableReasons[j].Reason);
-                }
+                int row = 0; 
+                DrawRequirements(requirements, rectLine, ref row, 0);
 
                 Text.Anchor = TextAnchor.UpperLeft;
             });
+        }
+
+        private static void DrawRequirements(Requirements requirements, Rect rectLine, ref int row, int layer)
+        {
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Rect rectLabelLine = rectLine.MoveRect(new Vector2(ToolTipRowHeight * layer, (rectLine.height + 2f) * row));
+
+            GUI.DrawTexture(rectLabelLine.LeftPartPixels(rectLabelLine.height).ContractedBy(4f), requirements.AreFulFilled ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
+            Widgets.Label(rectLabelLine.RightPartPixels(rectLabelLine.width - rectLabelLine.height), requirements.RequirementModeLabel);
+            
+            row++;
+            layer++;
+
+            foreach (DisableReason reason in requirements.DisableReasons)
+            {
+                Rect rectReasonLine = rectLine.MoveRect(new Vector2(ToolTipRowHeight * layer, (rectLine.height + 2f) * row));
+
+                GUI.DrawTexture(rectReasonLine.LeftPartPixels(rectReasonLine.height).ContractedBy(4f), reason.ShouldDisable ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex);
+                Widgets.Label(rectReasonLine.RightPartPixels(rectReasonLine.width - rectReasonLine.height), reason.Reason);
+
+                row++;
+            }
+
+            foreach (Requirements innerRequirement in requirements.InnerRequirements)
+            {
+                DrawRequirements(innerRequirement, rectLine, ref row, layer);
+            }
         }
     }
 }
