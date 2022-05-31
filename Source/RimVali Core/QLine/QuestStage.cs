@@ -65,12 +65,12 @@ namespace RimValiCore.QLine
         private readonly List<DisableReason> disableReasons;
         private readonly string labelOverride;
         private readonly bool valid;
-        private readonly int numberRequiredForXMustBeTrueMode;
+        private readonly int countForXMustBeTrue;
         private float? longestStringLength;
         private int? numberOfRequirements;
         private int? count;
 
-        public int NumberRequiredForXMustBeTrueMode => numberRequiredForXMustBeTrueMode;
+        public int CountForXMustBeTrue => countForXMustBeTrue;
 
         public List<Requirements> InnerRequirements => innerRequirements ?? new List<Requirements>();
 
@@ -111,7 +111,7 @@ namespace RimValiCore.QLine
                         break;
 
                     case RequirementMode.AtLeastXMustBeTrue:
-                        fulfilled = NumberRequiredForXMustBeTrueMode <= (innerRequirements?.Sum(requirement => requirement.AreFulFilled ? 1 : 0) ?? 0) + (disableReasons?.Sum(reason => reason.ShouldDisable ? 0 : 1) ?? 0);
+                        fulfilled = CountForXMustBeTrue <= (innerRequirements?.Sum(requirement => requirement.AreFulFilled ? 1 : 0) ?? 0) + (disableReasons?.Sum(reason => reason.ShouldDisable ? 0 : 1) ?? 0);
                         break;
                 }
 
@@ -119,9 +119,9 @@ namespace RimValiCore.QLine
             }
         }
 
-        public Requirements(RequirementMode mode, List<Requirements> innerRequirements = null, List<DisableReason> disableReasons = null, string labelOverride = null, int numberRequiredForXMustBeTrueMode = -1)
+        public Requirements(RequirementMode mode, List<Requirements> innerRequirements = null, List<DisableReason> disableReasons = null, string labelOverride = null, int countForXMustBeTrue = -1)
         {
-            this.numberRequiredForXMustBeTrueMode = numberRequiredForXMustBeTrueMode;
+            this.countForXMustBeTrue = countForXMustBeTrue;
             this.innerRequirements = innerRequirements;
             this.disableReasons = disableReasons;
             this.labelOverride = labelOverride;
@@ -189,9 +189,9 @@ namespace RimValiCore.QLine
                 valid = false;
             }
 
-            if (mode == RequirementMode.AtLeastXMustBeTrue && numberRequiredForXMustBeTrueMode <= 0)
+            if (mode == RequirementMode.AtLeastXMustBeTrue && countForXMustBeTrue <= 0)
             {
-                Log.Error($"mode is {mode}, but numberRequiredForXMustBeTrueMode is 0 or less ({numberRequiredForXMustBeTrueMode})!");
+                Log.Error($"mode is {mode}, but countForXMustBeTrue is 0 or less ({countForXMustBeTrue})!");
                 valid = false;
             }
 
