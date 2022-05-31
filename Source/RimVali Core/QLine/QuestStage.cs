@@ -78,7 +78,7 @@ namespace RimValiCore.QLine
 
         public bool Valid => valid;
 
-        public int ToolTipSpacesNeeded => (int)(count ?? (count = AllReasons().Count() + numberOfRequirements)); //+ 1 for itself
+        public int ToolTipSpacesNeeded => (int)(count ?? (count = AllReasons().Count() + numberOfRequirements));
 
         public float LongestStringLength
         {
@@ -133,11 +133,12 @@ namespace RimValiCore.QLine
         public float DetermineLongestStringLength()
         {
             float length = 0;
-            float lengthMod = Windows.GUIUtils.RectExtensions.ToolTipRowHeight;
+            float lengthMod = Windows.GUIUtils.RectExtensions.LayerOffset;
 
             if (!disableReasons.NullOrEmpty())
             {
                 length = disableReasons.Max(reason => Text.CalcSize(reason.Reason).x + lengthMod);
+                length = Math.Max(length, Text.CalcSize(RequirementModeLabel).x);
             }
 
             if (!innerRequirements.NullOrEmpty())

@@ -12,6 +12,7 @@ namespace RimValiCore.Windows.GUIUtils
     public static class RectExtensions
     {
         public const float ToolTipRowHeight = 25f;
+        public const float LayerOffset = 15f;
 
         /// <summary>
         ///     Creates a copy of this <see cref="Rect" /> moved by a <see cref="Vector2" />
@@ -168,7 +169,7 @@ namespace RimValiCore.Windows.GUIUtils
         private static void DrawRequirements(Requirements requirements, Rect rectLine, ref int row, int layer)
         {
             Text.Anchor = TextAnchor.MiddleLeft;
-            Rect rectLabelLine = rectLine.MoveRect(new Vector2(ToolTipRowHeight * layer, (rectLine.height + 2f) * row));
+            Rect rectLabelLine = rectLine.MoveRect(new Vector2(LayerOffset * layer, (rectLine.height + 2f) * row));
 
             GUI.DrawTexture(rectLabelLine.LeftPartPixels(rectLabelLine.height).ContractedBy(4f), requirements.AreFulFilled ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
             Widgets.Label(rectLabelLine.RightPartPixels(rectLabelLine.width - rectLabelLine.height), requirements.RequirementModeLabel);
@@ -178,7 +179,7 @@ namespace RimValiCore.Windows.GUIUtils
 
             foreach (DisableReason reason in requirements.DisableReasons)
             {
-                Rect rectReasonLine = rectLine.MoveRect(new Vector2(ToolTipRowHeight * layer, (rectLine.height + 2f) * row));
+                Rect rectReasonLine = rectLine.MoveRect(new Vector2(LayerOffset * layer, (rectLine.height + 2f) * row));
 
                 GUI.DrawTexture(rectReasonLine.LeftPartPixels(rectReasonLine.height).ContractedBy(4f), reason.ShouldDisable ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex);
                 Widgets.Label(rectReasonLine.RightPartPixels(rectReasonLine.width - rectReasonLine.height), reason.Reason);
