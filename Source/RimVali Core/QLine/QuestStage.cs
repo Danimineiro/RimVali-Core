@@ -119,7 +119,7 @@ namespace RimValiCore.QLine
             }
         }
 
-        public Requirements(RequirementMode mode, List<Requirements> innerRequirements = null, List<DisableReason> disableReasons = null, int numberRequiredForXMustBeTrueMode = -1)
+        public Requirements(RequirementMode mode, List<Requirements> innerRequirements = null, List<DisableReason> disableReasons = null, string labelOverride = null, int numberRequiredForXMustBeTrueMode = -1)
         {
             this.numberRequiredForXMustBeTrueMode = numberRequiredForXMustBeTrueMode;
             this.innerRequirements = innerRequirements;
