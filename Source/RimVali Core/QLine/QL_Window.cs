@@ -187,7 +187,7 @@ namespace RimValiCore.QLine
             Text.Anchor = TextAnchor.MiddleLeft;
             Text.Font = GameFont.Medium;
 
-            Widgets.Label(rectTitle, "##Quests:");
+            Widgets.Label(rectTitle, "QLine_Quests".Translate());
             Widgets.DrawLineHorizontal(rectTitle.x, rectTitle.yMax, rectTitle.width);
 
             Text.Font = GameFont.Small;

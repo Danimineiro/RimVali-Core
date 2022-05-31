@@ -140,7 +140,7 @@ namespace RimValiCore.QLine
                 if (tracker.Quests.First(quest => quest.Worker == this) is QLine qline)
                 {
                     tracker.FinishQuest(qline);
-                    Messages.Message($"##Quest has been finished: {qline.Quest.LabelCap}!", MessageTypeDefOf.TaskCompletion);
+                    Messages.Message("QLine_QuestCompleted".Translate(qline.Quest.LabelCap), MessageTypeDefOf.TaskCompletion);
                 }
             }
             catch
