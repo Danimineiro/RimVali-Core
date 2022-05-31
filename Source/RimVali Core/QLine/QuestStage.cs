@@ -49,7 +49,7 @@ namespace RimValiCore.QLine
 
         public bool IsAvailable => Requirements?.AreFulFilled ?? true;
 
-        //public string DisableReason => Requirements.Join(reason => $"{reason.Reason}: {reason.ShouldDisable}", "\n");
+        public string DisableReason => Requirements.AllReasons().Join(reason => $"{reason.Reason}: {reason.ShouldDisable}", "\n");
 
         public Action ButtonAction => buttonAction;
 
@@ -63,6 +63,7 @@ namespace RimValiCore.QLine
         private readonly RequirementMode mode;
         private readonly List<Requirements> innerRequirements;
         private readonly List<DisableReason> disableReasons;
+        private readonly string labelOverride;
         private readonly bool valid;
         private readonly int numberRequiredForXMustBeTrueMode;
         private float? longestStringLength;
@@ -85,7 +86,7 @@ namespace RimValiCore.QLine
             private set => longestStringLength = value;
         }
 
-        public string RequirementModeLabel => $"<color=green>{$"##RVC_{mode}"}:</color>";
+        public string RequirementModeLabel => labelOverride ?? $"<color=green>{$"##RVC_{mode}"}:</color>";
 
         public bool AreFulFilled
         {
@@ -123,6 +124,7 @@ namespace RimValiCore.QLine
             this.numberRequiredForXMustBeTrueMode = numberRequiredForXMustBeTrueMode;
             this.innerRequirements = innerRequirements;
             this.disableReasons = disableReasons;
+            this.labelOverride = labelOverride;
             this.mode = mode;
             
             valid = ErrorCheck();

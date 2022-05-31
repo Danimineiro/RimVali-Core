@@ -31,7 +31,7 @@ namespace RimValiCore.QLine
 
                             new List<Requirements>
                             {
-                                new Requirements(RequirementMode.AllFalse, disableReasons: new List<DisableReason>
+                                new Requirements(RequirementMode.AllFalse, labelOverride: "Label Override Test", disableReasons: new List<DisableReason>
                                 {
                                     new DisableReason(() => false, () => "Ayayayayay"),
                                     new DisableReason(() => false, () => "Wololol"),
@@ -44,7 +44,7 @@ namespace RimValiCore.QLine
                             new List<DisableReason>
                             {
                                 new DisableReason(() => true, () => "Does NOT have a lot of garbage lying around"),
-                                new DisableReason(() => false, () => "Does NOT have Nesi killed"),
+                                new DisableReason(() => false, () => "Does NOT have gotten bloodrot from Nesi"),
                                 new DisableReason(() => false, () => "Does have a good friend"),
                                 new DisableReason(() => true, () => "Does NOT pretend to be gay for financial benefits"),
                                 new DisableReason(() => true, () => "Does NOT say <color=red>UwU</color> occasionally when pretending to be gay"),
