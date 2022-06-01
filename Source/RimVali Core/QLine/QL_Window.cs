@@ -39,12 +39,19 @@ namespace RimValiCore.QLine
         //
         private Vector2 listScroll;
 
+        /// <summary>
+        ///     Shortcut to get to <see cref="Quest_Tracker.Quests"/>
+        /// </summary>
         private List<QLine> Quests => Find.World.GetComponent<Quest_Tracker>().Quests;
 
         public override Vector2 InitialSize => rectFull.size;
 
         protected override float Margin => 0f;
 
+        /// <summary>
+        ///     Determines how much height is required for the <see cref="rectContentPartInner"/> part of the scroll rect.
+        ///     The right part adds the number of quests + their visible stages
+        /// </summary>
         public float RequiredHeightForInnerScrollRect => (ItemHeight + CommonMargin) * Quests.Sum(quest => 1 + (expandedQuests.Contains(quest) ? quest.Worker.Stages.Sum(stage => quest.Worker.IsStageCompletedOrCurrent(stage) ? 1 : 0) : 0));
 
         public QL_Window()
@@ -60,7 +67,7 @@ namespace RimValiCore.QLine
             RefreshScrollRects();
         }
 
-        public override void DoWindowContents(Rect inRect)
+        public override void DoWindowContents(Rect _)
         {
             RefreshScrollRectsIfNeeded();
 
@@ -194,10 +201,13 @@ namespace RimValiCore.QLine
         }
     }
 
+    /// <summary>
+    ///     The window in which decisions take place
+    /// </summary>
     public class QL_DecisionWindow : Window
     {
-        private readonly Rect rectFull = new Rect(0f, 0f, 660f, 440f);
-        private readonly Rect rectMain;
+        private readonly Rect rectFull = new Rect(0f, 0f, 660f, 440f);  //Full window size
+        private readonly Rect rectMain;                                 //Window after my margin
 
         //Title
         private readonly Rect rectTop;
@@ -208,7 +218,7 @@ namespace RimValiCore.QLine
         private Rect rectDecisionButtonBase;
         private Rect rectDescriptionBox;
 
-        private Texture2D questTexture;
+        private readonly Texture2D questTexture;
 
         //Decision Button Space
         private Rect rectBottom;
@@ -219,18 +229,26 @@ namespace RimValiCore.QLine
         private readonly int stageIndex;
         private readonly int currentStage;
 
+        //Constants
         private const float CommonMargin = 5f;
         private const float DecisionButtonHeight = 25f;
         private const float DecisionButtonSpace = DecisionButtonHeight + CommonMargin;
 
+        //
         private string debugStageSelectorBuffer;
         private int debugStageSelector;
         private Vector2 labelScroll;
 
+        /// <summary>
+        ///     Determines if this window should display <see cref="QuestStageButtonDecision"/>s that are attached to the opened <see cref="stage"/>
+        /// </summary>
         private bool DoButtons => stageIndex == currentStage;
 
         public override Vector2 InitialSize => rectFull.size;
 
+        /// <summary>
+        ///     Sets the default RimWorld margin to 0, because I don't like the default and rather use my own
+        /// </summary>
         protected override float Margin => 0f;
 
         public QL_DecisionWindow(QLine quest, QuestStage stage, int stageIndex, int currentStage)
@@ -250,6 +268,7 @@ namespace RimValiCore.QLine
             rectTop = rectMain.TopPartPixels(35f);
             rectLabel = rectTop.TopPartPixels(30f);
 
+            //Do necessary adjustments if buttons are to be displayed
             if (DoButtons)
             {
                 rectBottom = rectMain.BottomPartPixels(stage.buttons.Count * (DecisionButtonHeight + CommonMargin) - CommonMargin);
@@ -263,7 +282,7 @@ namespace RimValiCore.QLine
 
         public override void DoWindowContents(Rect inRect)
         {
-            KillSelfIfQLWindowMissing();
+            CloseSelfIfQLWindowMissing();
 
             DrawTitleBar();
             DrawDescription();
@@ -305,7 +324,7 @@ namespace RimValiCore.QLine
         /// <summary>
         ///     Closes this window if <see cref="QL_Window"/> is closed
         /// </summary>
-        private void KillSelfIfQLWindowMissing()
+        private void CloseSelfIfQLWindowMissing()
         {
             if (Find.WindowStack.WindowOfType<QL_Window>() is null)
             {
@@ -438,6 +457,10 @@ namespace RimValiCore.QLine
             }
         }
 
+        /// <summary>
+        ///     Refreshes the inner scroll rect of an <see cref="QL_Window"/> if closed because likely a stage was advanced or quest finished
+        /// </summary>
+        /// <param name="doCloseSound">if it should make a close sound during closing</param>
         public override void Close(bool doCloseSound = true)
         {
             if (Find.WindowStack.WindowOfType<QL_Window>() is QL_Window mainTabWindow) mainTabWindow.RefreshScrollRects();

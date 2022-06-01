@@ -137,7 +137,7 @@ namespace RimValiCore.Windows.GUIUtils
 
         /// <summary>
         ///     Creates a window that displays all <see cref="Requirements"/> to determine why a button may be enabled or disabled.
-        ///     Doesn't display anything if <paramref name="requirements"/> is <see cref="GenList.NullOrEmpty{T}(IList{T})"/>
+        ///     Doesn't display anything if <paramref name="requirements"/> is null
         /// </summary>
         /// <param name="toolTipArea">The <see cref="Rect"/> in which the window is created, if the mouse is over it</param>
         /// <param name="outerWindowPos">A <see cref="Vector2"/> that modifies the position of the window</param>
@@ -149,8 +149,9 @@ namespace RimValiCore.Windows.GUIUtils
             List<DisableReason> disableReasons = requirements.AllReasons().ToList();
             const float CommonMargin = 5f;
 
+            //Dynamically creates the tool tip rect to snuggly fit every possible tooltip
             Rect rectToolTip = new Rect(Event.current.mousePosition + outerWindowPos + new Vector2(CommonMargin, CommonMargin), new Vector2(ToolTipRowHeight + 25f, 20f));
-            rectToolTip.height += (requirements.ToolTipSpacesNeeded) * (ToolTipRowHeight + 2f) - 2f;
+            rectToolTip.height += requirements.ToolTipLinesNeeded * (ToolTipRowHeight + 2f) - 2f;
             rectToolTip.width += Math.Max(Text.CalcSize(requirements.RequirementModeLabel).x, requirements.LongestStringLength);
             rectToolTip.y = Math.Min(rectToolTip.y, UI.screenHeight - rectToolTip.height);
 
@@ -161,11 +162,17 @@ namespace RimValiCore.Windows.GUIUtils
 
                 int row = 0; 
                 DrawRequirements(requirements, rectLine, ref row, 0);
-
-                Text.Anchor = TextAnchor.UpperLeft;
             });
         }
 
+        /// <summary>
+        ///     Fully draws a <see cref="Requirements"/> object using the given <paramref name="rectLine"/>.
+        ///     Calls itself to draw nested <see cref="Requirements"/> objects
+        /// </summary>
+        /// <param name="requirements"> the <see cref="Requirements"/> objects to pull data from</param>
+        /// <param name="rectLine">the <see cref="Rect"/> base to draw in</param>
+        /// <param name="row">the row inside a tooltip, to next draw in</param>
+        /// <param name="layer">how indented to draw in</param>
         private static void DrawRequirements(Requirements requirements, Rect rectLine, ref int row, int layer)
         {
             Text.Anchor = TextAnchor.MiddleLeft;
@@ -191,6 +198,8 @@ namespace RimValiCore.Windows.GUIUtils
             {
                 DrawRequirements(innerRequirement, rectLine, ref row, layer);
             }
+
+            Text.Anchor = TextAnchor.UpperLeft;
         }
     }
 }
