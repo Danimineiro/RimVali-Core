@@ -29,6 +29,11 @@ namespace RimValiCore.QLine
         }
 
         /// <summary>
+        ///     Returns the count of buttons that can be displayed
+        /// </summary>
+        public int DisplayableButtons => buttons.Sum(button => button.ShouldDisplay ? 1 : 0);
+
+        /// <summary>
         ///     The capitalized <see cref="label"/> of this object
         /// </summary>
         public string LabelCap => label.CapitalizeFirst();
@@ -36,7 +41,7 @@ namespace RimValiCore.QLine
         /// <returns>The debug string of this object</returns>
         public override string ToString()
         {
-            return $"[QuestStage] label: {label}, description: {description}, buttons:\n    {string.Join("\n    ", buttons)}";
+            return $"[{label}], description: {description}, buttons:\n    {string.Join("\n    ", buttons)}";
         }
     }
 
@@ -47,6 +52,7 @@ namespace RimValiCore.QLine
     {
         private readonly string buttonText;
         private readonly Action buttonAction;
+        private readonly Func<bool> shouldDisplay = () => true;
         private readonly Requirements requirements;
 
         /// <summary>
@@ -54,10 +60,12 @@ namespace RimValiCore.QLine
         /// </summary>
         /// <param name="buttonText">the text displayed on the button</param>
         /// <param name="buttonAction">the action executed </param>
-        public QuestStageButtonDecision(string buttonText, Action buttonAction)
+        /// <param name="shouldDisplay"
+        public QuestStageButtonDecision(string buttonText, Action buttonAction, Func<bool> shouldDisplay = null)
         {
             this.buttonText = buttonText;
             this.buttonAction = buttonAction;
+            this.shouldDisplay = shouldDisplay ?? this.shouldDisplay;
         }
 
         /// <summary>
@@ -66,7 +74,7 @@ namespace RimValiCore.QLine
         /// <param name="buttonText">the text displayed on the button</param>
         /// <param name="buttonAction">the action executed </param>
         /// <param name="requirements">the <see cref="RimValiCore.QLine.Requirements"/>that need to be fulfilled</param>
-        public QuestStageButtonDecision(string buttonText, Action buttonAction, Requirements requirements) : this(buttonText, buttonAction)
+        public QuestStageButtonDecision(string buttonText, Action buttonAction, Requirements requirements, Func<bool> shouldDisplay = null) : this(buttonText, buttonAction, shouldDisplay)
         {
             this.requirements = requirements;
         }
@@ -80,6 +88,8 @@ namespace RimValiCore.QLine
         ///     If the button can be pressed and activated
         /// </summary>
         public bool IsAvailable => Requirements?.AreFulFilled ?? true;
+
+        public bool ShouldDisplay => shouldDisplay();
 
         /// <summary>
         ///     Lists all reasons why this button might be disabled
@@ -98,7 +108,7 @@ namespace RimValiCore.QLine
         public Requirements Requirements => requirements;
 
         /// <returns>This button as a debug string</returns>
-        public override string ToString() => $"[QuestStageButtonDecision] buttonText: {buttonText}, hasAction: {buttonAction != null}";
+        public override string ToString() => $"[{buttonText}], hasAction: {buttonAction != null}, shouldDisplay: {ShouldDisplay}";
     }
 
     /// <summary>

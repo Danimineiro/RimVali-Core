@@ -271,7 +271,7 @@ namespace RimValiCore.QLine
             //Do necessary adjustments if buttons are to be displayed
             if (DoButtons)
             {
-                rectBottom = rectMain.BottomPartPixels(stage.buttons.Count * (DecisionButtonHeight + CommonMargin) - CommonMargin);
+                rectBottom = rectMain.BottomPartPixels(stage.DisplayableButtons * (DecisionButtonHeight + CommonMargin) - CommonMargin);
             }
 
             rectDescriptionBox = new Rect(rectMain.x, rectMain.y + rectTop.height, rectMain.width, rectMain.height - rectTop.height - rectBottom.height - (DoButtons ? CommonMargin : 0f));
@@ -337,9 +337,12 @@ namespace RimValiCore.QLine
         /// </summary>
         private void DrawDecisionButtons()
         {
+            int displayedButtons = 0;
             for (int i = 0; i < stage.buttons.Count; i++)
             {
-                Rect rectButton = rectDecisionButtonBase.MoveRect(new Vector2(0f, (rectDecisionButtonBase.height + CommonMargin) * i));
+                if (!stage.buttons[i].ShouldDisplay) continue;
+
+                Rect rectButton = rectDecisionButtonBase.MoveRect(new Vector2(0f, (rectDecisionButtonBase.height + CommonMargin) * displayedButtons));
                 Rect rectIcon = rectButton.LeftPartPixels(rectButton.height).ContractedBy(4f);
                 QuestStageButtonDecision button = stage[i];
                 bool buttonAvailable = button.IsAvailable;
@@ -359,6 +362,8 @@ namespace RimValiCore.QLine
                 rectButton.MakeToolTip(windowRect.position, button.Requirements);
 
                 GUI.DrawTexture(rectIcon, buttonAvailable ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
+
+                displayedButtons++;
             }
 
             DrawDebugButton();
@@ -371,7 +376,7 @@ namespace RimValiCore.QLine
         {
             if (RimValiCoreMod.Settings.QL_DecisionWindow_ShowDebug)
             {
-                Rect rectButton = rectDecisionButtonBase.MoveRect(new Vector2(0f, (rectDecisionButtonBase.height + CommonMargin) * stage.buttons.Count));
+                Rect rectButton = rectDecisionButtonBase.MoveRect(new Vector2(0f, (rectDecisionButtonBase.height + CommonMargin) * stage.DisplayableButtons));
 
                 if (currentStage == quest.Worker.Stages.Count - 1)
                 {
